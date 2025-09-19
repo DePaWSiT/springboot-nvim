@@ -4,8 +4,9 @@ local function safe_request(url)
   end)
 
   if not status then
-    vim.api.nvim_err_writeln(
-      "Error making request to " .. url .. ": " .. request
+    vim.notify(
+      "Error making request to " .. url .. ": " .. request,
+      vim.log.levels.ERROR
     )
     return nil
   end
@@ -17,7 +18,7 @@ local function safe_json_decode(data)
   local status, decoded = pcall(vim.fn.json_decode, data)
 
   if not status then
-    vim.api.nvim_err_writeln("Error decoding JSON: " .. decoded)
+    vim.notify("Error decoding JSON: " .. decoded, vim.log.levels.ERROR)
     return nil
   end
 
@@ -151,14 +152,14 @@ local function springboot_new_project()
   local request = safe_request("https://start.spring.io/metadata/client")
 
   if not request then
-    vim.api.nvim_err_writeln("Failed to make a request to the URL.")
+    vim.notify("Failed to make a request to the URL.", vim.log.levels.ERROR)
     return false
   end
 
   local springboot_data = safe_json_decode(request.stdout)
 
   if not springboot_data then
-    vim.api.nvim_err_writeln("Failed to decode JSON from the request.")
+    vim.notify("Failed to decode JSON from the request.", vim.log.levels.ERROR)
     return false
   end
   local build_types = { "maven", "gradle" }
