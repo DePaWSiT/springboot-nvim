@@ -1,35 +1,16 @@
 --this is the only thing actually doing something in the init???
 require("create_springboot_project")
+local utils = require("springboot-nvim.utils")
+local jdtls = require("jdtls")
 
 local M = {}
-local lspconfig = require("lspconfig")
-local jdtls = require("jdtls")
 
 M.incremental_compile = function()
   jdtls.compile("incremental")
 end
 
-M.get_spring_boot_project_root = function()
-  local current_file = vim.fn.expand("%:p")
-  if current_file == "" then
-    print("No file is currently open.")
-    return nil
-  end
-
-  local root_pattern = { "pom.xml", "build.gradle", "build.gradle.kts", ".git" }
-
-  local root_dir =
-    lspconfig.util.root_pattern(unpack(root_pattern))(current_file)
-  if not root_dir then
-    print("Project root not found.")
-    return nil
-  end
-
-  return root_dir
-end
-
 M.get_run_command = function(args)
-  local project_root = M.get_spring_boot_project_root()
+  local project_root = utils.get_spring_boot_project_root()
   if not project_root then
     return "Unknown"
   end
@@ -57,7 +38,7 @@ M.get_run_command = function(args)
 end
 
 M.boot_run = function(args)
-  local project_root = M.get_spring_boot_project_root()
+  local project_root = utils.get_spring_boot_project_root()
 
   if project_root then
     vim.cmd("split | terminal")
@@ -120,11 +101,6 @@ M.check_and_add_package = function()
     vim.api.nvim_win_set_cursor(0, { 3, 0 })
   end
 end
-
-M.fill_package_details = function()
-  M.check_and_add_package()
-end
-
 -- key mapping
 
 -- auto commands
@@ -132,8 +108,8 @@ M.setup = function()
   vim.api.nvim_exec2(
     [[
     augroup JavaAutoCommands
-        autocmd!
-        autocmd BufWritePost *.java lua require('springboot-nvim').incremental_compile()
+    autocmd!
+    autocmd BufWritePost *.java lua require('springboot-nvim').incremental_compile()
     augroup END
 ]],
     { output = false }
@@ -151,10 +127,10 @@ M.setup = function()
 
   vim.api.nvim_exec2(
     [[
-  augroup ClosePluginBuffers
-    autocmd!
-    autocmd FileType springbootnvim autocmd QuitPre * lua require('springboot-nvim').close_ui()
-  augroup END
+  	augroup ClosePluginBuffers
+  	autocmd!
+  	autocmd FileType springbootnvim autocmd QuitPre * lua require('springboot-nvim').close_ui()
+  	augroup END
 ]],
     { output = false }
   )

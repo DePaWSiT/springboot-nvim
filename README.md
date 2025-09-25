@@ -16,6 +16,12 @@ The plugin aims to bring features similar to that of modern Java IDE's such as I
 
 We are also planning a Spring Boot Project generator based on the Spring Initializer API, as well as features from community feedback.
 
+## Requirements
+- neovim >= 0.10
+- ripgrep
+- nvim-lspconfig
+- nvim-jdtls
+
 ## Installation
 
 Basic installation requires nvim-lspconfig and nvim-jdtls to auto compile, and gain information from the Java LSP about your project.
@@ -91,3 +97,9 @@ $ brew install spring-boot
 If you have recommendations feel free to create feature requests that we will attempt to get you.
 
 If you would like to contribute please create a new branch and pull request with the new/updated features.
+
+## ToDo
+- [ ] Support for a picker such as snacks or telescope
+    - [ ] Support dependency selection from within the picker when creating a new project
+    - [ ] Having a cmd such as :Spring that opens a menu from which the user can pick options, (probably also using a picker)
+- [ ] Default selected dependencies option in the config for when creating a new project

@@ -2,6 +2,11 @@ local lspconfig = require("lspconfig")
 
 local M = {}
 
+M.class_boiler_plate = "package %s;\n\npublic class %s{\n\n}"
+M.record_boiler_plate = "package %s;\n\npublic record %s(\n\n){}"
+M.interface_boiler_plate = "package %s;\n\npublic interface %s{\n\n}"
+M.enum_boiler_plate = "package %s;\n\npublic enum %s{\n\n}"
+
 ---converts a value to an integer
 ---@param val any value to be converted
 ---@return integer|nil
@@ -10,38 +15,46 @@ M.toint = function(val)
   return n and math.floor(n) or nil
 end
 
-M.class_boiler_plate = "package %s;\n\npublic class %s{\n\n}"
-M.record_boiler_plate = "package %s;\n\npublic record %s(\n\n){}"
-M.interface_boiler_plate = "package %s;\n\npublic interface %s{\n\n}"
-M.enum_boiler_plate = "package %s;\n\npublic enum %s{\n\n}"
-
-M.get_spring_boot_project_root = function(open_file)
+---returns the project root for a spring project based on cwd
+---@return string|nil
+M.get_spring_boot_project_root = function()
   local root_pattern = { "pom.xml", "build.gradle", "build.gradle.kts", ".git" }
 
-  return lspconfig.util.root_pattern(unpack(root_pattern))(open_file)
+  local root_dir =
+    lspconfig.util.root_pattern(unpack(root_pattern))(vim.loop.cwd())
+  if not root_dir then
+    vim.notify(
+      "Root directory of spring project could not be found",
+      vim.log.levels.WARN
+    )
+    return nil
+  end
+  return root_dir
 end
 
-M.find_main_application_class_directory = function(root_path)
+---returns the directory where the file is located containing the @SpringBootApplication decorator (likely main)
+---@return string|nil
+M.find_main_application_class_directory = function()
   local main_class_pattern = "@SpringBootApplication"
-  local java_file_pattern = "*.java"
 
-  -- Find the Java file with the specified pattern recursively in the project directory
-  local search_cmd = "find "
-    .. root_path
-    .. ' -type f -name "'
-    .. java_file_pattern
-    .. '" -exec grep -l "'
-    .. main_class_pattern
-    .. '" {} +'
-  local result = vim.fn.systemlist(search_cmd)
-
-  if not vim.tbl_isempty(result) then
-    local first_file_path = result[1] -- Assuming there's only one main application class
-    local directory = vim.fn.fnamemodify(first_file_path, ":h")
-    return directory
-  else
-    print("Main application class not found in the project directory.")
+  --requires ripgrep now
+  local file = vim.fn.systemlist(
+    string.format("rg --files-with-matches %s -1", main_class_pattern)
+  )[1]
+  local dir = file and vim.fn.fnamemodify(file, ":h") or nil
+  if not dir then
+    vim.notify(
+      "Main application class not found in the project directory.",
+      vim.log.levels.ERROR
+    )
+    return nil
   end
+  return dir
+end
+
+M.is_nvim_tree_available = function()
+  local has_nvim_tree_module = pcall(require, "nvim-tree")
+  return has_nvim_tree_module
 end
 
 M.java_path = function(full_path)
@@ -121,6 +134,39 @@ M.generate_java_file = function(buf, type, package_buf, class_buf)
   else
     print("Please specify a class name to continue")
   end
+end
+
+---Makes a safe web request
+---@param url string url for the web request
+---@return vim.SystemCompleted|nil result a systemcompleted object with the result of the web request
+M.safe_request = function(url)
+  local status, request = pcall(function()
+    return vim.system({ "curl", "-s", url }, { text = true }):wait()
+  end)
+
+  if not status then
+    vim.notify(
+      "Error making request to " .. url .. ": " .. request,
+      vim.log.levels.ERROR
+    )
+    return nil
+  end
+
+  return request
+end
+
+---Decodes JSON data using a pcall and json_decode
+---@param data string A JSON formatted string
+---@return any decoded Returns the decoded JSON string, the type of the return depends on the JSON string that was decoded
+M.safe_json_decode = function(data)
+  local status, decoded = pcall(vim.fn.json_decode, data)
+
+  if not status then
+    vim.notify("Error decoding JSON: " .. decoded, vim.log.levels.ERROR)
+    return nil
+  end
+
+  return decoded
 end
 
 return M
