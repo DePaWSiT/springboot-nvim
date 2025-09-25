@@ -21,6 +21,8 @@ We are also planning a Spring Boot Project generator based on the Spring Initial
 - ripgrep
 - nvim-lspconfig
 - nvim-jdtls
+- fd available in PATH (run ```fd --version``` in the commandline to check if avaiable)
+- curl available in PATH
 
 ## Installation
 
