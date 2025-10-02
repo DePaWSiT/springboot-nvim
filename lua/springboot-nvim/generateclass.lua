@@ -1,6 +1,5 @@
 local utils = require("springboot-nvim.utils")
 local api = vim.api
-local buf, win
 local start_buf
 
 local windows
@@ -77,6 +76,17 @@ M.generate_class = function()
   end
 end
 
+---@class bufReturn
+---@field package_bufnr integer
+---@field window_bufnr integer
+
+---Creates the package ui, ui for managing packages???
+---@param row integer
+---@param col integer
+---@param width integer
+---@param height integer
+---@param file_path any
+---@return bufReturn table: {package_bufnr : integer, window_bufnr : integer}
 M.create_package_ui = function(row, col, width, height, file_path)
   local package_buf = api.nvim_create_buf(false, true)
   --api.nvim_buf_set_option(package_buf, 'bufhidden', 'wipe')
@@ -98,11 +108,13 @@ M.create_package_ui = function(row, col, width, height, file_path)
   table.insert(windows, package_win)
   table.insert(bufs, package_buf)
   return {
-    buf = package_buf,
-    win = package_win,
+    package_bufnr = package_buf,
+    window_bufnr = package_win,
   }
 end
 
+---Creates a ui for something...
+---@param bufnr string|integer The name or the number of the buffer
 M.create_ui = function(bufnr)
   -- Get the file from where the generate class was called from
   start_buf = vim.fn.bufname(bufnr)
@@ -112,7 +124,7 @@ M.create_ui = function(bufnr)
   windows = {}
   bufs = {}
   -- Create buffer for popup
-  buf = api.nvim_create_buf(false, true)
+  local buf = api.nvim_create_buf(false, true)
   table.insert(bufs, buf)
   vim.bo[buf].bufhidden = "wipe"
   local border_buf = api.nvim_create_buf(false, true)
@@ -150,7 +162,7 @@ M.create_ui = function(bufnr)
 
   local border_win = api.nvim_open_win(border_buf, true, border_opts)
   table.insert(windows, border_win)
-  win = api.nvim_open_win(buf, true, opts)
+  local win = api.nvim_open_win(buf, true, opts)
   table.insert(windows, win)
   --api.nvim_command('au BufWipeout <buffer> exe "silent bdelete! "' ..border_buf)
 
@@ -170,12 +182,11 @@ M.create_ui = function(bufnr)
   )
   local package_area =
     M.create_package_ui(row + 2, col + 10, 48, 1, main_class_dir)
-  api.nvim_set_current_win(package_area.win)
+  api.nvim_set_current_win(package_area.window_bufnr)
   local first_line = vim.fn.getline(1, 1)
   local first_line_length = string.len(first_line[1])
   --api.nvim_feedkeys('a', 'n', true)
-  api.nvim_win_set_cursor(package_area.win, { 1, first_line_length })
-  M.set_mappings()
+  api.nvim_win_set_cursor(package_area.window_bufnr, { 1, first_line_length })
 end
 
 return M

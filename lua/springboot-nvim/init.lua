@@ -1,18 +1,24 @@
 --this is the only thing actually doing something in the init???
-require("create_springboot_project")
+require("springboot-nvim.create-springboot-project")
 local utils = require("springboot-nvim.utils")
 local jdtls = require("jdtls")
 
 local M = {}
 
+--TODO: Method not referenced, make run on startup, don't know if this method is even needed???
+--TODO: Make this a config option (full or incremental)
+--TODO: Do something with the callback function (if it returns something)
 M.incremental_compile = function()
   jdtls.compile("incremental")
 end
 
+---For getting the appropriate command for running the project (maven or gradle)
+---@param args string A string having additional run args
+---@return string|nil RunCommand Either the build command or nil if not build file or project root is found
 M.get_run_command = function(args)
   local project_root = utils.get_spring_boot_project_root()
   if not project_root then
-    return "Unknown"
+    return nil
   end
 
   local maven_file = vim.fn.findfile("pom.xml", project_root)
@@ -32,30 +38,39 @@ M.get_run_command = function(args)
       args or ""
     )
   else
-    print("No build file (pom.xml or build.gradle) found in the project root.")
-    return "Unknown"
+    vim.notify(
+      "No build file (pom.xml or build.gradle) found in the project root.",
+      vim.log.levels.ERROR
+    )
+    return nil
   end
 end
 
+---Launches the spring boot project
+---@param args string launch arguments, all in one string
 M.boot_run = function(args)
   local project_root = utils.get_spring_boot_project_root()
 
-  if project_root then
-    vim.cmd("split | terminal")
-    vim.cmd("resize 15")
-    vim.cmd("norm G")
-    local cd_cmd = ':call jobsend(b:terminal_job_id, "cd '
-      .. project_root
-      .. '\\n")'
-    vim.cmd(cd_cmd)
-    local run_cmd = M.get_run_command(args or "")
-    vim.cmd(run_cmd)
-    vim.cmd("wincmd k")
-  else
-    print("Not in a Spring Boot project")
+  if not project_root then
+    vim.notify("Could not find a build file", vim.log.levels.ERROR)
+    return
   end
+
+  vim.cmd("split | terminal")
+  vim.cmd("resize 15")
+  vim.cmd("norm G")
+  local cd_cmd = ':call jobsend(b:terminal_job_id, "cd '
+    .. project_root
+    .. '\\n")'
+  vim.cmd(cd_cmd)
+  local run_cmd = M.get_run_command(args or "")
+  vim.cmd(run_cmd)
+  vim.cmd("wincmd k")
 end
 
+---Don't know what this does
+---@param file_path string A file path
+---@return boolean contains whether there is package info
 M.contains_package_info = function(file_path)
   local file = io.open(file_path, "r")
   if not file then
@@ -69,28 +84,37 @@ M.contains_package_info = function(file_path)
   return file_size > 0
 end
 
+---find something .java
+---@param file_path string the file path to search from
+---@return string|nil package java package
 M.get_java_package = function(file_path)
-  local java_file_path = file_path:match("src/(.-)%.java")
-  if java_file_path then
-    local package_path = java_file_path:gsub("/", ".")
-
-    local t = {}
-    for str in string.gmatch(package_path, "([^.]+)") do
-      table.insert(t, str)
-    end
-
-    local package = ""
-
-    for i = 3, #t - 1 do
-      package = package .. "." .. t[i]
-    end
-
-    return string.sub(package, 2, -1)
-  else
+  local path_pattern = "src/(.-)%.java"
+  local java_file_path = file_path:match(path_pattern)
+  if not java_file_path then
+    vim.notify(
+      string.format("Could not find '%s' path pattern", path_pattern),
+      vim.log.levels.ERROR
+    )
     return nil
   end
+
+  local package_path = java_file_path:gsub("/", ".")
+
+  local t = {}
+  for str in string.gmatch(package_path, "([^.]+)") do
+    table.insert(t, str)
+  end
+
+  local package = ""
+
+  for i = 3, #t - 1 do
+    package = package .. "." .. t[i]
+  end
+
+  return string.sub(package, 2, -1)
 end
 
+---Checks and add packages
 M.check_and_add_package = function()
   local file_path = vim.fn.expand("%:p")
   if not M.contains_package_info(file_path) then

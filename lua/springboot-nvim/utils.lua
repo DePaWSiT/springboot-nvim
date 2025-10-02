@@ -7,16 +7,8 @@ M.record_boiler_plate = "package %s;\n\npublic record %s(\n\n){}"
 M.interface_boiler_plate = "package %s;\n\npublic interface %s{\n\n}"
 M.enum_boiler_plate = "package %s;\n\npublic enum %s{\n\n}"
 
----converts a value to an integer
----@param val any value to be converted
----@return integer|nil
-M.toint = function(val)
-  local n = tonumber(val)
-  return n and math.floor(n) or nil
-end
-
 ---returns the project root for a spring project based on cwd
----@return string|nil
+---@return string|nil root_dir The root directory for the spring boot project
 M.get_spring_boot_project_root = function()
   local root_pattern = { "pom.xml", "build.gradle", "build.gradle.kts", ".git" }
 
@@ -33,7 +25,7 @@ M.get_spring_boot_project_root = function()
 end
 
 ---returns the directory where the file is located containing the @SpringBootApplication decorator (likely main)
----@return string|nil
+---@return string|nil dir The directory where the @SpringBootApplication decoration is located in
 M.find_main_application_class_directory = function()
   local main_class_pattern = "@SpringBootApplication"
 
@@ -52,11 +44,17 @@ M.find_main_application_class_directory = function()
   return dir
 end
 
+---Whether nvim-tree.nvim is available
+---@return boolean avaiable True if available else false
 M.is_nvim_tree_available = function()
   local has_nvim_tree_module = pcall(require, "nvim-tree")
   return has_nvim_tree_module
 end
 
+---Returns the path to the java folder for a spring project
+---uses string.match so does not search deeper that the path given (probably)
+---@param full_path string The path from which to look in
+---@return string|nil path The path up to the '/java' folder (included)
 M.java_path = function(full_path)
   local pattern = "(.-)/java"
   return full_path:match(pattern) .. "/java"
