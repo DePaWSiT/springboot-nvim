@@ -29,4 +29,30 @@ M.list_to_string = function(tbl, is_err)
   return result
 end
 
+---Asks the user to pick one option from a table
+---@param tbl table<any> The table where the user can select from
+---@param menu_text string The text displayed at the top
+---@return any|nil value The selected value (same type as the table) or nil if out of bounds was selected
+M.table_to_inputlist = function(tbl, menu_text)
+  if next(tbl) == nil then
+    vim.notify("Table passed for inputlist is empty", vim.log.levels.ERROR)
+    return
+  end
+
+  menu_text = menu_text or "Choose an option: "
+  local menu = { menu_text }
+
+  for i, option in ipairs(tbl) do
+    table.insert(menu, string.format("%d. %s", i, option))
+  end
+
+  local choice = vim.fn.inputlist(menu)
+
+  if choice >= 1 and choice <= #tbl then
+    return tbl[choice]
+  else
+    return nil
+  end
+end
+
 return M

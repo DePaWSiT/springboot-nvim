@@ -3,7 +3,7 @@ local spring_utils = require("springboot-nvim.utils")
 local M = {}
 
 --TODO: Add support for picker (snacks in my instance)
---TODO: Try changing fn.input to vim.ui.select
+--TODO: Try changing fn.input to vim.fn.inputlist
 --TODO: Snacks picker supports multi-select but others dont, for others have it loop over the table removing objects as they are selected and confirm table when 'Done' option is submitted
 
 ---Adds data to a table handling springboot project data. This function is only for decoding the spring web request!!!
