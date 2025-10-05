@@ -1,163 +1,78 @@
 --this is the only thing actually doing something in the init???
 require("springboot-nvim.create-springboot-project")
-local utils = require("springboot-nvim.utils")
+local package_manager = require("springboot-nvim.package")
+local springboot_nvim_ui = require("springboot-nvim.ui.springboot_nvim_ui")
 local jdtls = require("jdtls")
 
-local M = {}
+local M = {
+  options = {
+    dev_menu = false,
+  },
+}
 
---TODO: Method not referenced, make run on startup, don't know if this method is even needed???
 --TODO: Make this a config option (full or incremental)
 --TODO: Do something with the callback function (if it returns something)
-M.incremental_compile = function()
+local function incremental_compile()
   jdtls.compile("incremental")
 end
 
----For getting the appropriate command for running the project (maven or gradle)
----@param args string A string having additional run args
----@return string|nil RunCommand Either the build command or nil if not build file or project root is found
-M.get_run_command = function(args)
-  local project_root = utils.get_spring_boot_project_root()
-  if not project_root then
-    return nil
-  end
-
-  local maven_file = vim.fn.findfile("pom.xml", project_root)
-  local gradle_file = vim.fn.findfile("build.gradle", project_root)
-  local kts_gradle_file = vim.fn.findfile("build.gradle.kts", project_root)
-
-  if maven_file ~= "" then
-    return string.format(
-      ':call jobsend(b:terminal_job_id, "cd %s && mvn spring-boot:run %s \\n")',
-      project_root,
-      args or ""
-    )
-  elseif gradle_file or kts_gradle_file ~= "" then
-    return string.format(
-      ':call jobsend(b:terminal_job_id, "cd %s && ./gradlew bootRun %s \\n")',
-      project_root,
-      args or ""
-    )
-  else
-    vim.notify(
-      "No build file (pom.xml or build.gradle) found in the project root.",
-      vim.log.levels.ERROR
-    )
-    return nil
-  end
-end
-
----Launches the spring boot project
----@param args string launch arguments, all in one string
-M.boot_run = function(args)
-  local project_root = utils.get_spring_boot_project_root()
-
-  if not project_root then
-    vim.notify("Could not find a build file", vim.log.levels.ERROR)
-    return
-  end
-
-  vim.cmd("split | terminal")
-  vim.cmd("resize 15")
-  vim.cmd("norm G")
-  local cd_cmd = ':call jobsend(b:terminal_job_id, "cd '
-    .. project_root
-    .. '\\n")'
-  vim.cmd(cd_cmd)
-  local run_cmd = M.get_run_command(args or "")
-  vim.cmd(run_cmd)
-  vim.cmd("wincmd k")
-end
-
----Don't know what this does
----@param file_path string A file path
----@return boolean contains whether there is package info
-M.contains_package_info = function(file_path)
-  local file = io.open(file_path, "r")
-  if not file then
-    return false
-  end
-  local current_position = file:seek()
-  local file_size = file:seek("end")
-  file:seek("set", current_position)
-  file:close()
-
-  return file_size > 0
-end
-
----find something .java
----@param file_path string the file path to search from
----@return string|nil package java package
-M.get_java_package = function(file_path)
-  local path_pattern = "src/(.-)%.java"
-  local java_file_path = file_path:match(path_pattern)
-  if not java_file_path then
-    vim.notify(
-      string.format("Could not find '%s' path pattern", path_pattern),
-      vim.log.levels.ERROR
-    )
-    return nil
-  end
-
-  local package_path = java_file_path:gsub("/", ".")
-
-  local t = {}
-  for str in string.gmatch(package_path, "([^.]+)") do
-    table.insert(t, str)
-  end
-
-  local package = ""
-
-  for i = 3, #t - 1 do
-    package = package .. "." .. t[i]
-  end
-
-  return string.sub(package, 2, -1)
-end
-
----Checks and add packages
-M.check_and_add_package = function()
-  local file_path = vim.fn.expand("%:p")
-  if not M.contains_package_info(file_path) then
-    local package_location = M.get_java_package(file_path)
-    local package_text = "package " .. package_location .. ";"
-    local buf = vim.api.nvim_get_current_buf()
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { package_text, "", "" })
-    vim.api.nvim_win_set_cursor(0, { 3, 0 })
-  end
-end
--- key mapping
-
 -- auto commands
-M.setup = function()
-  vim.api.nvim_exec2(
-    [[
-    augroup JavaAutoCommands
-    autocmd!
-    autocmd BufWritePost *.java lua require('springboot-nvim').incremental_compile()
-    augroup END
-]],
-    { output = false }
-  )
+local group =
+  vim.api.nvim_create_augroup("JavaSpringAutoCommands", { clear = true })
 
-  vim.api.nvim_exec2(
-    [[
-    augroup JavaPackageDetails
-    autocmd!
-    autocmd BufReadPost *.java lua require('springboot-nvim').fill_package_details()
-    augroup END
-]],
-    { output = false }
-  )
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = "*.java",
+  group = group,
+  callback = function()
+    incremental_compile()
+  end,
+})
 
-  vim.api.nvim_exec2(
-    [[
-  	augroup ClosePluginBuffers
-  	autocmd!
-  	autocmd FileType springbootnvim autocmd QuitPre * lua require('springboot-nvim').close_ui()
-  	augroup END
-]],
-    { output = false }
-  )
+vim.api.nvim_create_autocmd("BufReadPost", {
+  pattern = "*.java",
+  group = group,
+  callback = function()
+    package_manager.check_and_add_package()
+  end,
+})
+
+vim.api.nvim_create_autocmd("QuitPre", {
+  group = group,
+  callback = function()
+    if vim.bo.filetype == "springbootnvim" then
+      springboot_nvim_ui.close_ui()
+    end
+  end,
+})
+
+M.setup = function(opts)
+  M.options = vim.tbl_deep_extend("force", M.options, opts)
+  if M.options.dev_menu then
+    vim.notify("Dev menu enabled", vim.log.levels.INFO)
+
+    local snacks_present, _ = pcall(require, "snacks")
+    if not snacks_present then
+      vim.notify(
+        "Dev menu disabled as snacks is not present",
+        vim.log.levels.WARN
+      )
+    else
+      local dev = require("springboot-nvim.pickers.snacks")
+      vim.api.nvim_create_user_command("SpringDevMenu", function()
+        dev.choose_spring_dependencies(function(chosen_values)
+          if chosen_values == 0 then
+          --TODO: If no dependencies are selected, use default (config)
+          else
+            vim.notify(
+              "Selected dependencies:\n- "
+                .. table.concat(chosen_values, "\n- "),
+              vim.log.levels.INFO
+            )
+          end
+        end)
+      end, {})
+    end
+  end
 end
 
 return M

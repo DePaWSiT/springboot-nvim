@@ -1,61 +1,36 @@
+local utils = require("springboot-nvim.utils")
 local snacks = require("snacks")
 
+local M = {}
+
 --TODO: Use API to get list
-local function choose_spring_dependencies(callback)
-  local dependencies = {
-    "Spring Web",
-    "Spring Data JPA",
-    "Spring Security",
-    "Spring Boot DevTools",
-    "Spring Validation",
-    "Thymeleaf",
-    "Spring Batch",
-    "Spring Kafka",
-    "Spring Actuator",
-    "MySQL Driver",
-    "PostgreSQL Driver",
-    "Lombok",
-    "Flyway",
-    "MongoDB",
-    "Redis",
-  }
-
-  local done_label = "Done"
-  local wrapped = {}
-  for _, dep in ipairs(dependencies) do
-    table.insert(wrapped, { kind = "dep", value = dep })
+--TODO: Call this method from the project creation pipeline
+--TODO: Get data on the dependencies from the
+---@param on_confirm function(table<string>):void Function to be used for asking the user for dependencies when creating spring boot project
+M.choose_spring_dependencies = function(on_confirm)
+  local dependencies = {}
+  local request = utils.safe_request("https://start.spring.io/metadata/client")
+  local data = utils.safe_json_decode(request.stdout)
+  for _, categories in pairs(data.dependencies.values) do
+    for _, deps in pairs(categories.values) do
+      table.insert(dependencies, { text = deps.name, value = deps.id })
+    end
   end
-  table.insert(wrapped, { kind = "done", value = done_label })
 
-  snacks.picker({
-    items = wrapped,
-    prompt = string.format(
-      "Select Spring Boot dependencies (TAB to select, ENTER on '%s')",
-      done_label
-    ),
-    format = function(entry)
-      return entry.value
-    end,
+  snacks.picker.pick({
+    items = dependencies,
+    prompt = "TAB to select items, ENTER to submit",
+    format = "text",
     confirm = function(picker)
       local selected = picker:selected()
-      local chosen = {}
-      for _, entry in ipairs(selected) do
-        if entry.kind == "dep" then
-          table.insert(chosen, entry.value)
-        end
+      local values = {}
+      for _, item in pairs(selected) do
+        table.insert(values, item.value)
       end
-      callback(chosen)
+      on_confirm(values)
+      picker:close()
     end,
   })
 end
 
-choose_spring_dependencies(function(selected_deps)
-  if #selected_deps == 0 then
-    --TODO: If no dependencies are selected, use default (config)
-  else
-    vim.notify(
-      "Selected dependencies:\n- " .. table.concat(selected_deps, "\n- "),
-      vim.log.levels.INFO
-    )
-  end
-end)
+return M
