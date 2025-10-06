@@ -1,5 +1,6 @@
 local table_utils = require("springboot-nvim.table-utils")
 local spring_utils = require("springboot-nvim.utils")
+local snacks_picker = require("lua.springboot-nvim.pickers.snacks")
 local M = {}
 
 --TODO: Add support for picker (snacks in my instance)
@@ -117,11 +118,24 @@ end
 ---Request the dependencies based on id, not the name
 ---@return string dependencies A comma separated string listing the dependencies
 M.get_dependencies = function()
-  local dependencies = vim.fn.input(
-    "Enter dependencies (comma separated): ",
-    "devtools,web,data-jpa,h2,thymeleaf"
-  )
-  return dependencies
+  --TODO: Have a version that doesn't rely on other extensions (see above)
+
+  -- local dependencies = vim.fn.input(
+  --   "Enter dependencies (comma separated): ",
+  --   "devtools,web,data-jpa,h2,thymeleaf"
+  -- )
+  -- return dependencies
+  snacks_picker.choose_spring_dependencies(function(chosen_values)
+    if chosen_values == 0 then
+      --TODO: If no dependencies are selected, use default (config)
+    else
+      --TODO: Return the dependencies in the correct format
+      vim.notify(
+        "Selected dependencies:\n- " .. table.concat(chosen_values, "\n- "),
+        vim.log.levels.INFO
+      )
+    end
+  end)
 end
 
 ---Asks the user for a group id

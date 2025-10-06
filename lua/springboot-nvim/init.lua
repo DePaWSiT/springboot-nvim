@@ -57,19 +57,8 @@ M.setup = function(opts)
         vim.log.levels.WARN
       )
     else
-      local dev = require("springboot-nvim.pickers.snacks")
       vim.api.nvim_create_user_command("SpringDevMenu", function()
-        dev.choose_spring_dependencies(function(chosen_values)
-          if chosen_values == 0 then
-          --TODO: If no dependencies are selected, use default (config)
-          else
-            vim.notify(
-              "Selected dependencies:\n- "
-                .. table.concat(chosen_values, "\n- "),
-              vim.log.levels.INFO
-            )
-          end
-        end)
+        require("springboot-nvim.dev-menu").open_dev_menu()
       end, {})
     end
   end
