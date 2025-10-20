@@ -5,8 +5,10 @@ local start_buf
 local windows
 local bufs
 
+---@class Generate_Class
 local M = {}
 
+---Generates a new java class
 M.generate_class = function()
   local file_path = vim.fn.fnamemodify(start_buf, ":p")
   -- Search the LAST occurrence of "/java/" in file_path
@@ -76,17 +78,13 @@ M.generate_class = function()
   end
 end
 
----@class bufReturn
----@field package_bufnr integer
----@field window_bufnr integer
-
 ---Creates the package ui, ui for managing packages???
 ---@param row integer
 ---@param col integer
 ---@param width integer
 ---@param height integer
----@param file_path any
----@return bufReturn table: {package_bufnr : integer, window_bufnr : integer}
+---@param file_path string
+---@return {package_bufn:integer, window_bufn:integer} buffnumbers
 M.create_package_ui = function(row, col, width, height, file_path)
   local package_buf = api.nvim_create_buf(false, true)
   --api.nvim_buf_set_option(package_buf, 'bufhidden', 'wipe')

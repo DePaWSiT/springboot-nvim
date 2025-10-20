@@ -1,34 +1,32 @@
-local utils = require("springboot-nvim.utils")
-local snacks = require("snacks")
+---@type snacks.picker
+local picker = require("snacks.picker")
 
+---@class SnacksPicker
 local M = {}
 
---TODO: Use API to get list
---TODO: Call this method from the project creation pipeline
---TODO: Get data on the dependencies from the
----@param on_confirm function(table<string>):void Function to be used for asking the user for dependencies when creating spring boot project
-M.choose_spring_dependencies = function(on_confirm)
+---Using snacks picker for dependecy selection
+---@param springboot_data table
+---@param callback fun(selection:string[]) A callback method with the result
+M.choose_spring_dependencies = function(springboot_data, callback)
   local dependencies = {}
-  local request = utils.safe_request("https://start.spring.io/metadata/client")
-  local data = utils.safe_json_decode(request.stdout)
-  for _, categories in pairs(data.dependencies.values) do
+  for _, categories in pairs(springboot_data.dependencies.values) do
     for _, deps in pairs(categories.values) do
       table.insert(dependencies, { text = deps.name, value = deps.id })
     end
   end
 
-  snacks.picker.pick({
+  local selection = {}
+  picker.pick({
     items = dependencies,
-    prompt = "TAB to select items, ENTER to submit",
+    prompt = "TAB to select, ENTER to submit",
     format = "text",
-    confirm = function(picker)
-      local selected = picker:selected()
-      local values = {}
+    confirm = function(ret_picker)
+      local selected = ret_picker:selected()
       for _, item in pairs(selected) do
-        table.insert(values, item.value)
+        table.insert(selection, item.value)
       end
-      on_confirm(values)
-      picker:close()
+      ret_picker:close()
+      callback(selection)
     end,
   })
 end

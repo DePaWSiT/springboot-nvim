@@ -1,66 +1,49 @@
---this is the only thing actually doing something in the init???
-require("springboot-nvim.create-springboot-project")
-local package_manager = require("springboot-nvim.package")
-local springboot_nvim_ui = require("springboot-nvim.ui.springboot_nvim_ui")
-local jdtls = require("jdtls")
+---@type Autocmds
+local autocmds = require("springboot-nvim.autocmd")
+---@type ConfigOptions
+local config = require("springboot-nvim.config")
+---@type Spring_Menu
+local spring_menu = require("springboot-nvim.spring-menu")
 
-local M = {
-  options = {
-    dev_menu = false,
-  },
-}
+---@class Init
+local M = {}
 
---TODO: Make this a config option (full or incremental)
---TODO: Do something with the callback function (if it returns something)
-local function incremental_compile()
-  jdtls.compile("incremental")
+---Helper for creating the user commands
+local function create_usercommands()
+  vim.api.nvim_create_user_command("Spring", spring_menu.open_spring_menu, {})
 end
 
--- auto commands
-local group =
-  vim.api.nvim_create_augroup("JavaSpringAutoCommands", { clear = true })
-
-vim.api.nvim_create_autocmd("BufWritePost", {
-  pattern = "*.java",
-  group = group,
-  callback = function()
-    incremental_compile()
-  end,
-})
-
-vim.api.nvim_create_autocmd("BufReadPost", {
-  pattern = "*.java",
-  group = group,
-  callback = function()
-    package_manager.check_and_add_package()
-  end,
-})
-
-vim.api.nvim_create_autocmd("QuitPre", {
-  group = group,
-  callback = function()
-    if vim.bo.filetype == "springbootnvim" then
-      springboot_nvim_ui.close_ui()
-    end
-  end,
-})
-
-M.setup = function(opts)
-  M.options = vim.tbl_deep_extend("force", M.options, opts)
-  if M.options.dev_menu then
-    vim.notify("Dev menu enabled", vim.log.levels.INFO)
-
-    local snacks_present, _ = pcall(require, "snacks")
-    if not snacks_present then
-      vim.notify(
-        "Dev menu disabled as snacks is not present",
-        vim.log.levels.WARN
-      )
+---Helper for setting a picker function
+local set_picker = function()
+  if config.picker == "default" then
+    local snacks_picker_present, _ = pcall(require, "snacks.picker")
+    if snacks_picker_present then
+      config.picker = "snacks"
     else
-      vim.api.nvim_create_user_command("SpringDevMenu", function()
-        require("springboot-nvim.dev-menu").open_dev_menu()
-      end, {})
+      config.picker = "vim"
     end
+  end
+end
+
+---Helper to enable the dev menu
+local enable_dev_menu = function()
+  vim.notify("Dev menu enabled", vim.log.levels.INFO)
+
+  vim.api.nvim_create_user_command("SpringDevMenu", function()
+    require("springboot-nvim.dev-menu").open_dev_menu()
+  end, {})
+end
+
+---First function to be run
+---@param opts ConfigOptions user provided configuration options
+M.setup = function(opts)
+  config = vim.tbl_deep_extend("force", config, opts)
+  autocmds.create_autocmds()
+  create_usercommands()
+  set_picker()
+
+  if config.dev_menu then
+    enable_dev_menu()
   end
 end
 

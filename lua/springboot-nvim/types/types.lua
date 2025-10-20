@@ -1,0 +1,71 @@
+--TODO: Go over every table in determine whether it really is table<> or [] (kinda made a mistake there)
+
+---@meta
+---
+---@class Table_Utils
+---@field table_pop_value fun(tbl: any[], item:any):any|nil
+---
+---@class Autocmds
+---@field create_autocmds fun()
+---
+---@class New_Project_Info
+---@field boot_version string
+---@field language string
+---@field java_version string
+---@field build_type string
+---@field dependencies string
+---@field group_id string
+---@field artifact_id string
+---@field name string
+---@field package_name string
+---
+---@class Create_Springboot_Project
+---@field springboot_new_project fun()
+---
+---@class Spring_Menu_Definitions
+---@field name string
+---@field func any
+---
+---@class Spring_Menu
+---@field open_spring_menu fun()
+---
+---@class Generate_Class
+---@field generate_class fun()
+---@field create_package_ui fun(row: integer, col: integer, width: integer, height: integer, file_path: string):{package_bufnr:integer, window_bufnr:integer}
+---@field create_ui fun(bufnr: string|integer)
+---
+---@class Ui_Utils
+---@field center_text fun(str:string, width:integer):string
+---@field package_text fun(file_path:string):string|nil
+---@field draw_border fun(width:integer, height:integer):string[]
+---@field draw_popup fun(width:integer, height:integer, row:integer, col:integer, header:string):{popup_buf:integer, popup_win:integer, border_buf:integer, border_win:integer}
+---@field draw_labeled_input fun(width:integer, height:integer, row:integer, col:integer, label:string, popup_buf:integer, value:any):{input_buf:integer, input_win:integer}
+---
+---@class Utils
+---@field class_boiler_plate string
+---@field record_boiler_plate string
+---@field interface_boiler_plate string
+---@field enum_boiler_plate string
+---@field get_spring_boot_project fun():string|nil
+---@field find_main_application_class_directory fun():string|nil
+---@field is_nvim_tree_available fun():boolean
+---@field java_path fun(full_path:string):string|nil
+---@field generate_java_file fun(buf:integer, type:string, package_buf:integer, class:integer)
+---@field safe_request fun(url:string):vim.SystemCompleted|nil
+---@field safe_json_decode fun(data:string):any
+---
+---@class ConfigOptions
+---@field dev_menu boolean
+---@field default_dependencies string
+---@field jdtls_compile "full"|"incremental"|nil
+---@field picker "default"|"vim"|"snacks"
+---
+---@class Init
+---@field setup fun(opts:ConfigOptions)
+---
+---@class PickerBasic
+---@field choose_spring_dependencies fun(spring_request_data: table, opts:table, done_flag:string|nil, callback:fun(selection:string[]|nil))
+---
+---@class SnacksPicker
+---@field choose_spring_dependencies fun(spring_request_data: table, callback: fun(selection:string[]|nil))
+---

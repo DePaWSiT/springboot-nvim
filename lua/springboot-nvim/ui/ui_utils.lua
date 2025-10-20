@@ -1,12 +1,21 @@
+---@class Ui_Utils
+local M = {}
 local api = vim.api
 
-local function center_text(str, width)
+---Centers text
+---@param str string The text te be centered
+---@param width integer Total width available
+---@return string centered_string The same string but centered
+M.center_text = function(str, width)
   --local width = api.nvim_win_get_width(0)
   local shift = math.floor(width / 2) - math.floor(string.len(str) / 2)
   return string.rep(" ", shift) .. str
 end
 
-local function package_text(file_path)
+---something related to package pathing \ retrieving something
+---@param file_path string The path to look from for the src directory
+---@return string|nil package_path
+M.package_text = function(file_path)
   local src_index = string.find(file_path, "/src")
   local base_package_path = string.sub(file_path, src_index + 15)
   if base_package_path then
@@ -17,7 +26,11 @@ local function package_text(file_path)
   end
 end
 
-local function draw_border(width, height)
+---comment
+---@param width integer
+---@param height integer
+---@return string[] border_table Table containing all the borders
+M.draw_border = function(width, height)
   local border_table = { "╭" .. string.rep("─", width) .. "╮" }
   local middle = "│" .. string.rep(" ", width) .. "│"
   for _ = 1, height do
@@ -28,7 +41,7 @@ local function draw_border(width, height)
   return border_table
 end
 
-local function draw_popup(width, height, row, col, header)
+M.draw_popup = function(width, height, row, col, header)
   local popup_buf, border_buf
   local popup_win, border_win
 
@@ -58,7 +71,7 @@ local function draw_popup(width, height, row, col, header)
     zindex = 100,
   }
 
-  local outline = draw_border(width, height)
+  local outline = M.draw_border(width, height)
   api.nvim_buf_set_lines(border_buf, 0, -1, false, outline)
 
   border_win = api.nvim_open_win(border_buf, true, border_opts)
@@ -68,7 +81,7 @@ local function draw_popup(width, height, row, col, header)
     0,
     -1,
     false,
-    { center_text(header, width) }
+    { M.center_text(header, width) }
   )
   popup_win = api.nvim_open_win(popup_buf, true, opts)
 
@@ -80,7 +93,7 @@ local function draw_popup(width, height, row, col, header)
   }
 end
 
-local function draw_labeled_input(
+M.draw_labeled_input = function(
   width,
   height,
   row,
@@ -90,7 +103,7 @@ local function draw_labeled_input(
   value
 )
   -- Generate the lable text and input border
-  local input_border = draw_border(width, height)
+  local input_border = M.draw_border(width, height)
   local label_text = {}
   table.insert(label_text, string.rep(" ", 12) .. input_border[1])
   table.insert(
@@ -125,10 +138,4 @@ local function draw_labeled_input(
   }
 end
 
-return {
-  draw_border = draw_border,
-  draw_popup = draw_popup,
-  draw_labeled_input = draw_labeled_input,
-  center_text = center_text,
-  package_text = package_text,
-}
+return M

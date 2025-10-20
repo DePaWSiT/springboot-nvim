@@ -1,5 +1,6 @@
 local lspconfig = require("lspconfig")
 
+---@class Utils
 local M = {}
 
 M.class_boiler_plate = "package %s;\n\npublic class %s{\n\n}"
@@ -44,13 +45,6 @@ M.find_main_application_class_directory = function()
   return dir
 end
 
----Whether nvim-tree.nvim is available
----@return boolean avaiable True if available else false
-M.is_nvim_tree_available = function()
-  local has_nvim_tree_module = pcall(require, "nvim-tree")
-  return has_nvim_tree_module
-end
-
 ---Returns the path to the java folder for a spring project
 ---uses string.match so does not search deeper that the path given (probably)
 ---@param full_path string The path from which to look in
@@ -61,16 +55,13 @@ M.java_path = function(full_path)
 end
 
 M.generate_java_file = function(buf, type, package_buf, class_buf)
-  local package_buf_int = M.totint(package_buf)
-  local class_buf_int = M.totint(class_buf)
-  if not package_buf_int or class_buf_int then
+  if not package_buf or class_buf then
     vim.notify("Could not get buffer for package or class", vim.log.levels.WARN)
     return
   end
-  local package_input =
-    vim.api.nvim_buf_get_lines(package_buf_int, 0, -1, false)
+  local package_input = vim.api.nvim_buf_get_lines(package_buf, 0, -1, false)
   local package_text = table.concat(package_input)
-  local class_input = vim.api.nvim_buf_get_lines(class_buf_int, 0, -1, false)
+  local class_input = vim.api.nvim_buf_get_lines(class_buf, 0, -1, false)
   local class_text = table.concat(class_input)
   if class_text ~= "" then
     local dir = M.java_path(vim.api.nvim_buf_get_name(buf))

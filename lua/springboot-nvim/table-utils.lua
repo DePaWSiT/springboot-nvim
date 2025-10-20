@@ -1,5 +1,10 @@
+---@class Table_Utils
 local M = {}
 
+---Whether an element is present in a given table
+---@param tbl table<any> The table to look through
+---@param element any The element to be searched for
+---@return boolean present Whether the element is present in the table or not
 M.contains = function(tbl, element)
   for _, value in pairs(tbl) do
     if value == element then
@@ -9,7 +14,7 @@ M.contains = function(tbl, element)
   return false
 end
 
-M.list_to_string = function(tbl, is_err)
+function M.list_to_string(tbl, is_err)
   local result = ""
 
   for i, value in ipairs(tbl) do
@@ -30,10 +35,11 @@ M.list_to_string = function(tbl, is_err)
 end
 
 ---Asks the user to pick one option from a table
----@param tbl table<any> The table where the user can select from
+---@generic T
+---@param tbl T[] The table where the user can select from
 ---@param menu_text string The text displayed at the top
 ---@return any|nil value The selected value (same type as the table) or nil if out of bounds was selected
-M.table_to_inputlist = function(tbl, menu_text)
+function M.table_to_inputlist(tbl, menu_text)
   if next(tbl) == nil then
     vim.notify("Table passed for inputlist is empty", vim.log.levels.ERROR)
     return
@@ -55,4 +61,14 @@ M.table_to_inputlist = function(tbl, menu_text)
   end
 end
 
+--- Removes the first matching value from a table (array-style)
+function M.table_pop_value(tbl, item)
+  for i, v in ipairs(tbl) do
+    if v == item then
+      table.remove(tbl, i)
+      return v
+    end
+  end
+  return nil -- not found
+end
 return M

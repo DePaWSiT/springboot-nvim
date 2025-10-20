@@ -1,15 +1,31 @@
-local table_utils = require("springboot-nvim.table-utils")
+---@type BasicPicker
+local basic_picker = require("springboot-nvim.pickers.basic")
+---@type SnacksPicker
+local snacks_picker = require("springboot-nvim.pickers.snacks")
+---@type Utils
 local spring_utils = require("springboot-nvim.utils")
-local snacks_picker = require("lua.springboot-nvim.pickers.snacks")
+---@type ConfigOptions
+local config = require("springboot-nvim.config")
+
+---@class Create_Springboot_Project
 local M = {}
 
---TODO: Add support for picker (snacks in my instance)
---TODO: Try changing fn.input to vim.fn.inputlist
---TODO: Snacks picker supports multi-select but others dont, for others have it loop over the table removing objects as they are selected and confirm table when 'Done' option is submitted
+---@type New_Project_Info
+local project_info = {
+  boot_version = "",
+  language = "",
+  java_version = "",
+  build_type = "",
+  dependencies = "",
+  group_id = "",
+  artifact_id = "",
+  name = "",
+  package_name = "",
+}
 
 ---Adds data to a table handling springboot project data. This function is only for decoding the spring web request!!!
 ---@param data table The table that is the result of decoding the spring web request.
----@return table spring_data A table containing data holding the ids of spring project values
+---@return string[] spring_data A table containing data holding the ids of spring project values
 local handle_start_springboot_data = function(data)
   local spring_data = {}
   for _, value in pairs(data.values) do
@@ -18,156 +34,111 @@ local handle_start_springboot_data = function(data)
   return spring_data
 end
 
---TODO: when using vim.ui.select, the user picks from provided input instead of providing their own, making the nil return possibly obselete
----Asks the user for the build type
----@param data_available table<string> Table containing available values
----@return string|nil build_type The build type or nil if no valid option is given
-M.get_build_type = function(data_available)
-  local build_type_available = table_utils.list_to_string(data_available, false)
-  local options_err = table_utils.list_to_string(data_available, true)
-  local build_type =
-    vim.fn.input("Enter build type (" .. build_type_available .. "): ", "maven")
-  if not table_utils.contains(data_available, build_type) then
-    print("Invalid build type. Please enter " .. options_err .. ".")
-    return nil
-  end
-
-  return build_type
-end
-
----Asks the user which language package to use
----@param data_available table<string> the options from which the user can pick from
----@return string|nil The language package or nil if no valid option is provided
-M.get_language = function(data_available)
-  local language_available = table_utils.list_to_string(data_available, false)
-  local options_err = table_utils.list_to_string(data_available, true)
-
-  local language =
-    vim.fn.input("Enter Language (" .. language_available .. "): ", "java")
-  if not table_utils.contains(data_available, language) then
-    print("Invalid language. Please enter " .. options_err .. ".")
-    return nil
-  end
-
-  return language
-end
-
----Asks the user for the java version
----@param data_available table<string> Table containing the version options for java
----@return string|nil Version The selected java version or nil if no valid version is given
-M.get_java_version = function(data_available)
-  local version_available = table_utils.list_to_string(data_available, false)
-  local options_err = table_utils.list_to_string(data_available, true)
-
-  local java_version =
-    vim.fn.input("Enter Java Version (" .. version_available .. "): ", "21")
-  if not table_utils.contains(data_available, java_version) then
-    print(
-      "Invalid Java version. Please enter a valid version "
-        .. options_err
-        .. "."
-    )
-    return nil
-  end
-
-  return java_version
-end
-
----Asks the user for the spring boot version
----@param data_available table<string> The versions the user can pick from
----@return string|nil boot_version string of the selected version or nil if not valid version is given
-M.get_boot_version = function(data_available)
-  local version_available = table_utils.list_to_string(data_available, false)
-  local options_err = table_utils.list_to_string(data_available, true)
-
-  local boot_version = vim.fn.input(
-    "Enter Spring Boot Version (" .. version_available .. "): ",
-    data_available[#data_available]
+---Helper function for doing some error reporting on input
+---@param input_stage string which part of the input an error was triggered
+local abort_input = function(input_stage)
+  vim.notify(
+    string.format("Failure on input: %s", input_stage),
+    vim.log.levels.ERROR
   )
-  if not table_utils.contains(data_available, boot_version) then
-    print(
-      "Invalid Spring Boot version. Please enter a valid version "
-        .. options_err
-        .. "."
+end
+
+---Final (helper) function to be called for running the command to create a new project
+local run_new_project_command = function()
+  local command = string.format(
+    "spring init --boot-version=%s --language=%s --java-version=%s --build=%s --dependencies=%s --groupId=%s --artifactId=%s --name=%s --package-name=%s %s",
+    project_info.boot_version,
+    project_info.language,
+    project_info.java_version,
+    project_info.build_type,
+    project_info.dependencies,
+    project_info.group_id,
+    project_info.artifact_id,
+    project_info.name,
+    project_info.package_name,
+    project_info.name
+  )
+
+  local output = vim.fn.system(command)
+  if vim.v.shell_error ~= 0 then
+    vim.notify(
+      "Someting went wrong executing spring command: \n"
+        .. output
+        .. "Command executed: \n"
+        .. command,
+      vim.log.levels.WARN
     )
-    return nil
+  else
+    vim.notify("Succesfully created spring project", vim.log.levels.INFO)
+    vim.fn.chdir(project_info.name)
   end
-
-  return boot_version
 end
 
----Asks the user which form of packaging to use
----@param data_available table<string> The options the user can pick from
----@return string|nil packaging string of selected packaging or nil if no valid option is given
-M.get_packaging = function(data_available)
-  local packaging_available = table_utils.list_to_string(data_available, false)
-  local options_err = table_utils.list_to_string(data_available, true)
-
-  local packaging =
-    vim.fn.input("Enter Packaging(" .. packaging_available .. "): ", "jar")
-  if packaging ~= "jar" and packaging ~= "war" then
-    print("Invalid packaging. Please enter " .. options_err .. ".")
-    return nil
+---Helper function for project naming
+---@param value string|nil value to be assigned or nil if action was cancelled
+---@param key string Key from project_info table
+---@param default_value string value to be used when no value is provided
+---@return boolean continue Whether the action can continue or not
+local naming_helper = function(value, key, default_value)
+  if not value then
+    abort_input(key)
+    return false
+  elseif value == "" then
+    project_info[key] = default_value
+  else
+    project_info[key] = value
   end
-  return packaging
+  return true
 end
 
---TODO: loop over a list of dependencies using vim.ui.select
---TODO: reconstruct the output from that into a valid string (comma separated,no spaces)
-
----Request the dependencies based on id, not the name
----@return string dependencies A comma separated string listing the dependencies
-M.get_dependencies = function()
-  --TODO: Have a version that doesn't rely on other extensions (see above)
-
-  -- local dependencies = vim.fn.input(
-  --   "Enter dependencies (comma separated): ",
-  --   "devtools,web,data-jpa,h2,thymeleaf"
-  -- )
-  -- return dependencies
-  snacks_picker.choose_spring_dependencies(function(chosen_values)
-    if chosen_values == 0 then
-      --TODO: If no dependencies are selected, use default (config)
-    else
-      --TODO: Return the dependencies in the correct format
-      vim.notify(
-        "Selected dependencies:\n- " .. table.concat(chosen_values, "\n- "),
-        vim.log.levels.INFO
-      )
+---Callback method handling the naming scheme for new project creation
+local naming_input = function()
+  local continue = false
+  vim.ui.input({ prompt = "Enter Group ID: " }, function(group_id)
+    continue = naming_helper(group_id, "group_id", "com.example")
+    if not continue then
+      abort_input("Group ID")
+      return
     end
+    vim.ui.input({ prompt = "Enter Artifact ID: " }, function(artifact_id)
+      continue = naming_helper(artifact_id, "artifact_id", "demo")
+      if not continue then
+        abort_input("Arifact ID")
+        return
+      end
+      vim.ui.input({ prompt = "Enter Project name: " }, function(project_name)
+        continue = naming_helper(project_name, "name", "demo")
+        if not continue then
+          abort_input("Project Name")
+          return
+        end
+        vim.ui.input({ prompt = "Enter Package name: " }, function(package_name)
+          continue = naming_helper(
+            package_name,
+            "package_name",
+            project_info.group_id .. "." .. project_info.artifact_id
+          )
+          if not continue then
+            abort_input("Package Name")
+            return
+          end
+          run_new_project_command()
+        end)
+      end)
+    end)
   end)
 end
 
----Asks the user for a group id
----@return string group_id
-M.get_group_id = function()
-  local group_id = vim.fn.input("Enter Group ID: ", "com.example")
-  return group_id
-end
-
----Asks the user for an artifact id
----@return string artifact_id
-M.get_artifact_id = function()
-  local artifact_id = vim.fn.input("Enter Artifact ID: ", "myproject")
-  return artifact_id
-end
-
----Asks the user for a project name
----@param artifact_id string The artifact id
----@return string project_name
-M.get_project_name = function(artifact_id)
-  local project_name = vim.fn.input("Enter project name: ", artifact_id)
-  return project_name
-end
-
----Asks the user for a package Name
----@param group_id string The group id
----@param artifact_id string The artifact id
----@return string Package_name
-M.get_package_name = function(group_id, artifact_id)
-  local package_name =
-    vim.fn.input("Enter package name: ", group_id .. "." .. artifact_id)
-  return package_name
+---Callback method to be called after choosing dependencies
+---@param dependencies string[]|nil Array containing the dependencies chosen
+local choose_dependencies_callback = function(dependencies)
+  if dependencies == nil then
+    abort_input("dependencies")
+    return
+  end
+  local dependency_string = table.concat(dependencies, ",")
+  project_info.dependencies = dependency_string
+  naming_input()
 end
 
 ---The main method for starting a new springboot project
@@ -177,15 +148,16 @@ M.springboot_new_project = function()
 
   if not request then
     vim.notify("Failed to make a request to the URL.", vim.log.levels.ERROR)
-    return false
+    return
   end
 
   local springboot_data = spring_utils.safe_json_decode(request.stdout)
 
   if not springboot_data then
     vim.notify("Failed to decode JSON from the request.", vim.log.levels.ERROR)
-    return false
+    return
   end
+
   local build_types = { "maven", "gradle" }
   local languages = handle_start_springboot_data(springboot_data.language)
   local java_versions =
@@ -194,73 +166,59 @@ M.springboot_new_project = function()
     handle_start_springboot_data(springboot_data.bootVersion)
   local packagings = handle_start_springboot_data(springboot_data.packaging)
 
-  --TODO: needs checking which would mean decoding the dependencies section from the spring web request (dependencies{values[{values[{id, name}]}]})
-  local dependencies = M.get_dependencies()
-
-  local build_type = M.get_build_type(build_types)
-  if not build_type then
-    return
-  end
-
-  local language = M.get_language(languages)
-  if not language then
-    return
-  end
-
-  local java_version = M.get_java_version(java_versions)
-  if not java_version then
-    return
-  end
-
-  local boot_version = M.get_boot_version(boot_versions)
-  if not boot_version then
-    return
-  end
-
-  local packaging = M.get_packaging(packagings)
-  if not packaging then
-    return
-  end
-
-  local group_id = M.get_group_id()
-  local artifact_id = M.get_artifact_id()
-  local name = M.get_project_name(artifact_id)
-  local package_name = M.get_package_name(group_id, artifact_id)
-
-  local command = string.format(
-    "spring init --boot-version=%s --java-version=%s --build=%s --dependencies=%s --groupId=%s --artifactId=%s --name=%s --package-name=%s %s",
-    boot_version,
-    java_version,
-    build_type,
-    dependencies,
-    group_id,
-    artifact_id,
-    name,
-    package_name,
-    name
-  )
-
-  local output = vim.fn.system(command)
-  if vim.v.shell_error ~= 0 then
-    print("Erro ao executar: " .. output)
-  else
-    print(output)
-    vim.fn.chdir(name)
-    local pathJava = vim.fn.system("fd -I java src/main/java")
-
-    vim.cmd("e " .. pathJava)
-    if spring_utils.is_nvim_tree_available() then
-      vim.cmd("NvimTreeFindFileToggle")
+  vim.ui.select(build_types, {}, function(build_type)
+    if build_type == nil then
+      abort_input("build_type")
+      return
     end
-  end
+    project_info.build_type = tostring(build_type)
+    vim.ui.select(languages, {}, function(language)
+      if language == nil then
+        abort_input("language")
+        return
+      end
+      project_info.language = tostring(language)
+      vim.ui.select(java_versions, {}, function(java_version)
+        if java_version == nil then
+          abort_input("java_version")
+          return
+        end
+        project_info.java_version = tostring(java_version)
+        vim.ui.select(boot_versions, {}, function(boot_version)
+          if boot_version == nil then
+            abort_input("boot_version")
+            return
+          end
+          project_info.boot_version = tostring(boot_version)
+          vim.ui.select(packagings, {}, function(packaging)
+            if packaging == nil then
+              abort_input("packaging")
+              return
+            end
 
-  print("Project created successfully!")
+            --add pickers here
+            if config.picker == "vim" then
+              basic_picker.choose_spring_dependencies(
+                springboot_data,
+                { prompt = "List of possible dependencies: " },
+                nil,
+                function(dependencies)
+                  choose_dependencies_callback(dependencies)
+                end
+              )
+            elseif config.picker == "snacks" then
+              snacks_picker.choose_spring_dependencies(
+                springboot_data,
+                function(dependencies)
+                  choose_dependencies_callback(dependencies)
+                end
+              )
+            end
+          end)
+        end)
+      end)
+    end)
+  end)
 end
-
-vim.api.nvim_create_user_command(
-  "SpringBootNewProject",
-  M.springboot_new_project,
-  {}
-)
 
 return M

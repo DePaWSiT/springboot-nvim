@@ -1,3 +1,4 @@
+---@type Ui_Utils
 local ui_utils = require("springboot-nvim.ui.ui_utils")
 local utils = require("springboot-nvim.utils")
 
