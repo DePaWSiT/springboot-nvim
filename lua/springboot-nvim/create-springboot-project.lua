@@ -94,37 +94,43 @@ end
 ---Callback method handling the naming scheme for new project creation
 local naming_input = function()
   local continue = false
-  vim.ui.input({ prompt = "Enter Group ID: " }, function(group_id)
+  vim.ui.input({ prompt = "Enter Group(com.example): " }, function(group_id)
     continue = naming_helper(group_id, "group_id", "com.example")
     if not continue then
       abort_input("Group ID")
       return
     end
-    vim.ui.input({ prompt = "Enter Artifact ID: " }, function(artifact_id)
+    vim.ui.input({ prompt = "Enter Artifact(demo): " }, function(artifact_id)
       continue = naming_helper(artifact_id, "artifact_id", "demo")
       if not continue then
         abort_input("Arifact ID")
         return
       end
-      vim.ui.input({ prompt = "Enter Project name: " }, function(project_name)
-        continue = naming_helper(project_name, "name", "demo")
-        if not continue then
-          abort_input("Project Name")
-          return
-        end
-        vim.ui.input({ prompt = "Enter Package name: " }, function(package_name)
-          continue = naming_helper(
-            package_name,
-            "package_name",
-            project_info.group_id .. "." .. project_info.artifact_id
-          )
+      vim.ui.input(
+        { prompt = "Enter project name(demo): " },
+        function(project_name)
+          continue = naming_helper(project_name, "name", "demo")
           if not continue then
-            abort_input("Package Name")
+            abort_input("Project Name")
             return
           end
-          run_new_project_command()
-        end)
-      end)
+          vim.ui.input(
+            { prompt = "Enter package name(com.example.demo): " },
+            function(package_name)
+              continue = naming_helper(
+                package_name,
+                "package_name",
+                project_info.group_id .. "." .. project_info.artifact_id
+              )
+              if not continue then
+                abort_input("Package Name")
+                return
+              end
+              run_new_project_command()
+            end
+          )
+        end
+      )
     end)
   end)
 end
@@ -166,59 +172,80 @@ M.springboot_new_project = function()
     handle_start_springboot_data(springboot_data.bootVersion)
   local packagings = handle_start_springboot_data(springboot_data.packaging)
 
-  vim.ui.select(build_types, {}, function(build_type)
-    if build_type == nil then
-      abort_input("build_type")
-      return
-    end
-    project_info.build_type = tostring(build_type)
-    vim.ui.select(languages, {}, function(language)
-      if language == nil then
-        abort_input("language")
+  vim.ui.select(
+    build_types,
+    { prompt = "Select build type: " },
+    function(build_type)
+      if build_type == nil then
+        abort_input("build_type")
         return
       end
-      project_info.language = tostring(language)
-      vim.ui.select(java_versions, {}, function(java_version)
-        if java_version == nil then
-          abort_input("java_version")
-          return
-        end
-        project_info.java_version = tostring(java_version)
-        vim.ui.select(boot_versions, {}, function(boot_version)
-          if boot_version == nil then
-            abort_input("boot_version")
+      project_info.build_type = tostring(build_type)
+      vim.ui.select(
+        languages,
+        { prompt = "Select language: " },
+        function(language)
+          if language == nil then
+            abort_input("language")
             return
           end
-          project_info.boot_version = tostring(boot_version)
-          vim.ui.select(packagings, {}, function(packaging)
-            if packaging == nil then
-              abort_input("packaging")
-              return
-            end
+          project_info.language = tostring(language)
+          vim.ui.select(
+            java_versions,
+            { prompt = "Select java version: " },
+            function(java_version)
+              if java_version == nil then
+                abort_input("java_version")
+                return
+              end
+              project_info.java_version = tostring(java_version)
+              vim.ui.select(
+                boot_versions,
+                { prompt = "Select Spring version: " },
+                function(boot_version)
+                  if boot_version == nil then
+                    abort_input("boot_version")
+                    return
+                  end
+                  project_info.boot_version = tostring(boot_version)
+                  vim.ui.select(
+                    packagings,
+                    { prompt = "Select Packaging: " },
+                    function(packaging)
+                      if packaging == nil then
+                        abort_input("packaging")
+                        return
+                      end
 
-            --add pickers here
-            if config.picker == "vim" then
-              basic_picker.choose_spring_dependencies(
-                springboot_data,
-                { prompt = "List of possible dependencies: " },
-                nil,
-                function(dependencies)
-                  choose_dependencies_callback(dependencies)
-                end
-              )
-            elseif config.picker == "snacks" then
-              snacks_picker.choose_spring_dependencies(
-                springboot_data,
-                function(dependencies)
-                  choose_dependencies_callback(dependencies)
+                      vim.notify(vim.inspect(config), vim.log.levels.DEBUG)
+                      --add pickers here
+                      if config.picker == "vim" then
+                        basic_picker.choose_spring_dependencies(
+                          springboot_data,
+                          { prompt = "List of possible dependencies: " },
+                          nil,
+                          function(dependencies)
+                            choose_dependencies_callback(dependencies)
+                          end
+                        )
+                      elseif config.picker == "snacks" then
+                        snacks_picker.choose_spring_dependencies(
+                          springboot_data,
+                          function(dependencies)
+                            choose_dependencies_callback(dependencies)
+                          end
+                        )
+                      end
+                    end
+                  )
                 end
               )
             end
-          end)
-        end)
-      end)
-    end)
-  end)
+          )
+        end
+      )
+    end
+  )
 end
 
 return M

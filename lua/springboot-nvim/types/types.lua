@@ -1,5 +1,3 @@
---TODO: Go over every table in determine whether it really is table<> or [] (kinda made a mistake there)
-
 ---@meta
 ---
 ---@class Table_Utils
@@ -29,8 +27,11 @@
 ---@class Spring_Menu
 ---@field open_spring_menu fun()
 ---
----@class Generate_Class
+---@class Generator
 ---@field generate_class fun()
+---@field generate_record fun()
+---@field generate_interface fun()
+---@field generate_enum fun()
 ---@field create_package_ui fun(row: integer, col: integer, width: integer, height: integer, file_path: string):{package_bufnr:integer, window_bufnr:integer}
 ---@field create_ui fun(bufnr: string|integer)
 ---
@@ -46,6 +47,7 @@
 ---@field record_boiler_plate string
 ---@field interface_boiler_plate string
 ---@field enum_boiler_plate string
+---@field spring_languages string[]
 ---@field get_spring_boot_project fun():string|nil
 ---@field find_main_application_class_directory fun():string|nil
 ---@field is_nvim_tree_available fun():boolean

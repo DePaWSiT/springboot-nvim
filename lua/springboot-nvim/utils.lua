@@ -1,5 +1,3 @@
-local lspconfig = require("lspconfig")
-
 ---@class Utils
 local M = {}
 
@@ -7,22 +5,26 @@ M.class_boiler_plate = "package %s;\n\npublic class %s{\n\n}"
 M.record_boiler_plate = "package %s;\n\npublic record %s(\n\n){}"
 M.interface_boiler_plate = "package %s;\n\npublic interface %s{\n\n}"
 M.enum_boiler_plate = "package %s;\n\npublic enum %s{\n\n}"
+M.spring_languages = { "java", "kotlin", "groovy" }
+M.spring_root_patterns = { "pom.xml", "build.gradle", "build.gradle.kts" }
 
 ---returns the project root for a spring project based on cwd
 ---@return string|nil root_dir The root directory for the spring boot project
 M.get_spring_boot_project_root = function()
-  local root_pattern = { "pom.xml", "build.gradle", "build.gradle.kts", ".git" }
-
-  local root_dir =
-    lspconfig.util.root_pattern(unpack(root_pattern))(vim.loop.cwd())
-  if not root_dir then
-    vim.notify(
-      "Root directory of spring project could not be found",
-      vim.log.levels.WARN
-    )
-    return nil
+  for _, pattern in ipairs(M.spring_root_patterns) do
+    local match = vim.fs.find(pattern, {
+      path = vim.loop.cwd(),
+      type = "file",
+    })[1]
+    if match then
+      return vim.fs.dirname(match)
+    end
   end
-  return root_dir
+  vim.notify(
+    "Root directory of spring project could not be found",
+    vim.log.levels.WARN
+  )
+  return nil
 end
 
 ---returns the directory where the file is located containing the @SpringBootApplication decorator (likely main)

@@ -47,9 +47,9 @@ M.draw_popup = function(width, height, row, col, header)
 
   -- Setup the buffers
   border_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(border_buf, "filetype", "springbootnvim")
+  vim.bo[border_buf].filetype = "springbootnvim"
   popup_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(popup_buf, "filetype", "springbootnvim")
+  vim.bo[popup_buf].filetype = "springbootnvim"
 
   local border_opts = {
     style = "minimal",
@@ -116,7 +116,7 @@ M.draw_labeled_input = function(
 
   -- Create the input window and buffer
   local input_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(input_buf, "filetype", "sprintbootnvim")
+  vim.bo[input_buf].filetype = "springbootnvim"
 
   local opts = {
     style = "minimal",

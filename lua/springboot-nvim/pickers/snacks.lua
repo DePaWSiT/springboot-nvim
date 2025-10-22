@@ -18,7 +18,7 @@ M.choose_spring_dependencies = function(springboot_data, callback)
   local selection = {}
   picker.pick({
     items = dependencies,
-    prompt = "TAB to select, ENTER to submit",
+    prompt = "TAB to select, ENTER to submit: ",
     format = "text",
     confirm = function(ret_picker)
       local selected = ret_picker:selected()

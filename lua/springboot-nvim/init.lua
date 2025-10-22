@@ -37,7 +37,11 @@ end
 ---First function to be run
 ---@param opts ConfigOptions user provided configuration options
 M.setup = function(opts)
-  config = vim.tbl_deep_extend("force", config, opts)
+  local new_config = vim.tbl_deep_extend("force", config, opts)
+  for k, v in pairs(new_config) do
+    config[k] = v
+  end
+
   autocmds.create_autocmds()
   create_usercommands()
   set_picker()
