@@ -97,13 +97,13 @@ local naming_input = function()
   vim.ui.input({ prompt = "Enter Group(com.example): " }, function(group_id)
     continue = naming_helper(group_id, "group_id", "com.example")
     if not continue then
-      abort_input("Group ID")
+      abort_input("Group")
       return
     end
     vim.ui.input({ prompt = "Enter Artifact(demo): " }, function(artifact_id)
       continue = naming_helper(artifact_id, "artifact_id", "demo")
       if not continue then
-        abort_input("Arifact ID")
+        abort_input("Arifact")
         return
       end
       vim.ui.input(
