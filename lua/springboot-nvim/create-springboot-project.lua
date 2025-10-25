@@ -217,7 +217,6 @@ M.springboot_new_project = function()
                         return
                       end
 
-                      vim.notify(vim.inspect(config), vim.log.levels.DEBUG)
                       --add pickers here
                       if config.picker == "vim" then
                         basic_picker.choose_spring_dependencies(

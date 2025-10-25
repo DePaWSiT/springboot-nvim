@@ -1,6 +1,6 @@
 ---@type ConfigOptions
 local config = require("springboot-nvim.config")
----@class Dev_Menu
+---@class Spring_Menu
 local M = {}
 
 ---@type Spring_Menu_Definitions
@@ -104,6 +104,13 @@ M.open_spring_menu = function()
         ---@type Generator
         local gen = require("springboot-nvim.generator")
         gen.generate_enum()
+      end,
+    },
+    {
+      name = "Open strange menu",
+      func = function()
+        local ui = require("springboot-nvim.ui.springboot_nvim_ui")
+        ui.create_generate_class_ui()
       end,
     },
     {
