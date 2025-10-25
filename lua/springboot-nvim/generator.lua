@@ -66,6 +66,7 @@ local function generator_base(is_testing, callback)
   end
 
   --TODO: what to do when this returns an empty table? use project root? idk
+  --TODO: add manual-override option for package-path where the user can manually insert a package path for where to place the file another vim.ui.input...
   local subdirs = utils.get_relative_subdirectories(language_path)
 
   --thought of making this without asking for package name but then where to place file???
