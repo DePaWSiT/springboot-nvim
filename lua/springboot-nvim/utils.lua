@@ -27,24 +27,67 @@ M.get_spring_boot_project_root = function()
   return nil
 end
 
----returns the directory where the file is located containing the @SpringBootApplication decorator (likely main)
----@return string|nil dir The directory where the @SpringBootApplication decoration is located in
-M.find_main_application_class_directory = function()
-  local main_class_pattern = "@SpringBootApplication"
+---Returns all relative paths of subdirectories below the given filepath
+---@param filepath string Starting filepath
+---@return string[] subdirectories All the subdirectories below the filepath
+function M.get_relative_subdirectories(filepath)
+  local subdirs = {}
 
-  --requires ripgrep now
-  local file = vim.fn.systemlist(
-    string.format("rg --files-with-matches %s -1", main_class_pattern)
-  )[1]
-  local dir = file and vim.fn.fnamemodify(file, ":h") or nil
-  if not dir then
+  filepath = filepath:gsub("/$", "")
+
+  local handle = vim.loop.fs_scandir(filepath)
+  if not handle then
+    return subdirs
+  end
+
+  while true do
+    local name, type = vim.loop.fs_scandir_next(handle)
+    if not name then
+      break
+    end
+    if type == "directory" then
+      table.insert(subdirs, name)
+
+      local deeper = M.get_relative_subdirectories(filepath .. "/" .. name)
+      for _, d in ipairs(deeper) do
+        table.insert(subdirs, name .. "/" .. d)
+      end
+    end
+  end
+  return subdirs
+end
+
+---Makes a safe web request
+---@param url string url for the web request
+---@return vim.SystemCompleted|nil result a systemcompleted object with the result of the web request
+M.safe_request = function(url)
+  local status, request = pcall(function()
+    return vim.system({ "curl", "-s", url }, { text = true }):wait()
+  end)
+
+  if not status then
     vim.notify(
-      "Main application class not found in the project directory.",
+      "Error making request to " .. url .. ": " .. request,
       vim.log.levels.ERROR
     )
     return nil
   end
-  return dir
+
+  return request
+end
+
+---Decodes JSON data using a pcall and json_decode
+---@param data string A JSON formatted string
+---@return any decoded Returns the decoded JSON string, the type of the return depends on the JSON string that was decoded
+M.safe_json_decode = function(data)
+  local status, decoded = pcall(vim.fn.json_decode, data)
+
+  if not status then
+    vim.notify("Error decoding JSON: " .. decoded, vim.log.levels.ERROR)
+    return nil
+  end
+
+  return decoded
 end
 
 return M

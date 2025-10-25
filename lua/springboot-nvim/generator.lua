@@ -48,57 +48,63 @@ local function generator_base(is_testing, callback)
     path_to_main = vim.fs.joinpath(root, "src", "main")
   end
 
+  --pretty nice that be default the folder name matches the language used, only 3 possible folders
+  local language_path
+  for _, name in ipairs(utils.spring_languages) do
+    language_path = vim.fs.find(name, {
+      path = path_to_main,
+      type = "directory",
+      limit = 1,
+    })[1] or nil
+  end
+  if language_path == nil then
+    vim.notify(
+      "language folder after src could not be found",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  --TODO: what to do when this returns an empty table? use project root? idk
+  local subdirs = utils.get_relative_subdirectories(language_path)
+
   --thought of making this without asking for package name but then where to place file???
   --ask for filename
-  vim.ui.input({ prompt = "Enter filename: " }, function(filename)
+  vim.ui.input({ prompt = "Enter filename.ext: " }, function(filename)
     if filename == nil or filename == "" then
       vim.notify("No filename was given", vim.log.levels.WARN)
       return
     end
-    --ask for package name
-    vim.ui.input({
-      prompt = "Enter package name: ",
-    }, function(package_name)
+    --ask package
+    vim.ui.select(subdirs, {
+      prompt = "Select location: ",
+    }, function(package_path)
       --no package name given
-      if package_name == nil or package_name == "" then
-        vim.notify("No package name was given", vim.log.levels.WARN)
+      if package_path == nil then
+        vim.notify("No location given", vim.log.levels.WARN)
         return
       end
 
-      --look for java, kotlin or groovy folder
-      for _, name in ipairs(utils.spring_languages) do
-        local match = vim.fs.find(name, {
-          path = path_to_main,
-          type = "directory",
-          limit = 1,
-        })[1]
-        --pretty nice that be default the folder name matches the language used, only 3 possible folders
-        if match then
-          --given all the data is correct, construct path
-          local path = vim.fs.joinpath(
-            match,
-            string.gsub(package_name, "%.", "/"),
-            filename
-          )
-          --for searching, windows doesn't really care if you use / or \ but to make it easier to have them all the same
-          path = string.gsub(path, "\\", "/")
+      local package_name = string.gsub(package_path, "/", ".")
 
-          local can_create = check_file_creation(path)
-          if not can_create then
-            vim.notify("File already exists", vim.log.levels.WARN)
-            return
-          end
+      --construct direct filepath with data provided
+      local filepath = vim.fs.joinpath(language_path, package_path, filename)
+      --for searching, windows doesn't really care if you use / or \ but to make it easier to have them all the same
+      filepath = string.gsub(filepath, "\\", "/")
 
-          --pass relevant information back in callback form
-          callback({
-            filename = filename,
-            package_name = package_name,
-            path = path,
-          })
-          --no more searching required so break
-          break
-        end
+      local can_create = check_file_creation(filepath)
+      if not can_create then
+        vim.notify("File already exists", vim.log.levels.WARN)
+        return
       end
+
+      --pass relevant information back in callback form
+      callback({
+        filename = filename,
+        package_name = package_name,
+        filepath = filepath,
+      })
+      --no more searching required so break
     end)
   end)
 end

@@ -41,11 +41,9 @@
 ---@field interface_boiler_plate string
 ---@field enum_boiler_plate string
 ---@field spring_languages string[]
+---@field spring_root_patterns string[]
 ---@field get_spring_boot_project fun():string|nil
----@field find_main_application_class_directory fun():string|nil
----@field is_nvim_tree_available fun():boolean
----@field java_path fun(full_path:string):string|nil
----@field generate_java_file fun(buf:integer, type:string, package_buf:integer, class:integer)
+---@field get_relative_subdirectories fun(filepath:string):string[]
 ---@field safe_request fun(url:string):vim.SystemCompleted|nil
 ---@field safe_json_decode fun(data:string):any
 ---
