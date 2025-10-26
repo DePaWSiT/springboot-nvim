@@ -107,10 +107,35 @@ M.open_spring_menu = function()
       end,
     },
     {
-      name = "Open strange menu",
+      name = "Add Test Class",
       func = function()
-        local ui = require("springboot-nvim.ui.springboot_nvim_ui")
-        ui.create_generate_class_ui()
+        ---@type Generator
+        local gen = require("springboot-nvim.generator")
+        gen.generate_test_class()
+      end,
+    },
+    {
+      name = "Add Test Record",
+      func = function()
+        ---@type Generator
+        local gen = require("springboot-nvim.generator")
+        gen.generate_test_record()
+      end,
+    },
+    {
+      name = "Add Test Interface",
+      func = function()
+        ---@type Generator
+        local gen = require("springboot-nvim.generator")
+        gen.generate_test_interface()
+      end,
+    },
+    {
+      name = "Add Test Enum",
+      func = function()
+        ---@type Generator
+        local gen = require("springboot-nvim.generator")
+        gen.generate_test_enum()
       end,
     },
     {

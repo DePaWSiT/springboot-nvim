@@ -32,8 +32,10 @@
 ---@field generate_record fun()
 ---@field generate_interface fun()
 ---@field generate_enum fun()
----@field create_package_ui fun(row: integer, col: integer, width: integer, height: integer, file_path: string):{package_bufnr:integer, window_bufnr:integer}
----@field create_ui fun(bufnr: string|integer)
+---@field generate_test_class fun()
+---@field generate_test_record fun()
+---@field generate_test_interface fun()
+---@field generator_test_enum fun()
 ---
 ---@class Utils
 ---@field class_boiler_plate string
@@ -50,7 +52,7 @@
 ---@class ConfigOptions
 ---@field dev_menu boolean
 ---@field default_dependencies string
----@field jdtls_compile "full"|"incremental"|nil
+---@field jdtls_compile "full"|"incremental"
 ---@field picker "default"|"vim"|"snacks"
 ---
 ---@class Init

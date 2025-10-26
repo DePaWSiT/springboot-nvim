@@ -28,6 +28,38 @@ local function generator_write(path, contents)
   file.close(file)
 end
 
+---Helper callback for generator base
+---@param package_path string
+---@param language_path string
+---@param filename string
+---@param callback fun(info: {filename:string, package_name:string, path:string })
+local function generator_base_callback(
+  package_path,
+  language_path,
+  filename,
+  callback
+)
+  local package_name = string.gsub(package_path, "/", ".")
+
+  --construct direct filepath with data provided
+  local filepath = vim.fs.joinpath(language_path, package_path, filename)
+  --for searching, windows doesn't really care if you use / or \ but to make it easier to have them all the same
+  filepath = string.gsub(filepath, "\\", "/")
+
+  local can_create = check_file_creation(filepath)
+  if not can_create then
+    vim.notify("File already exists", vim.log.levels.WARN)
+    return
+  end
+
+  --pass relevant information back in callback form
+  callback({
+    filename = filename,
+    package_name = package_name,
+    filepath = filepath,
+  })
+end
+
 ---Base method for generator a java file
 ---@param is_testing boolean Whether the file is to be placed in the test section or the main
 ---@param callback fun(info: {filename:string, package_name:string, path:string })
@@ -42,10 +74,13 @@ local function generator_base(is_testing, callback)
 
   --path to main or test depending on the situation
   local path_to_main
+  local prompt_message
   if is_testing then
     path_to_main = vim.fs.joinpath(root, "src", "test")
+    prompt_message = "Path from src/test: "
   else
     path_to_main = vim.fs.joinpath(root, "src", "main")
+    prompt_message = "Path from src/main: "
   end
 
   --pretty nice that be default the folder name matches the language used, only 3 possible folders
@@ -66,8 +101,9 @@ local function generator_base(is_testing, callback)
   end
 
   --TODO: what to do when this returns an empty table? use project root? idk
-  --TODO: add manual-override option for package-path where the user can manually insert a package path for where to place the file another vim.ui.input...
   local subdirs = utils.get_relative_subdirectories(language_path)
+  local manual_override_string = "Manual Override"
+  table.insert(subdirs, manual_override_string)
 
   --thought of making this without asking for package name but then where to place file???
   --ask for filename
@@ -86,26 +122,22 @@ local function generator_base(is_testing, callback)
         return
       end
 
-      local package_name = string.gsub(package_path, "/", ".")
-
-      --construct direct filepath with data provided
-      local filepath = vim.fs.joinpath(language_path, package_path, filename)
-      --for searching, windows doesn't really care if you use / or \ but to make it easier to have them all the same
-      filepath = string.gsub(filepath, "\\", "/")
-
-      local can_create = check_file_creation(filepath)
-      if not can_create then
-        vim.notify("File already exists", vim.log.levels.WARN)
-        return
+      if package_path == manual_override_string then
+        vim.ui.input({ prompt = prompt_message }, function(manual_path)
+          if manual_path == nil then
+            vim.notify("No path was provided", vim.log.levels.ERROR)
+            return
+          end
+          generator_base_callback(
+            manual_path,
+            language_path,
+            filename,
+            callback
+          )
+        end)
+      else
+        generator_base_callback(package_path, language_path, filename, callback)
       end
-
-      --pass relevant information back in callback form
-      callback({
-        filename = filename,
-        package_name = package_name,
-        filepath = filepath,
-      })
-      --no more searching required so break
     end)
   end)
 end
@@ -149,4 +181,43 @@ M.generate_enum = function()
   end)
 end
 
+--Uses the same boilerplate string but places it in the src/test directory instead of the src/main one
+---Generates a new java test class
+M.generate_test_class = function()
+  generator_base(true, function(info)
+    local write_content =
+      string.format(utils.class_boiler_plate, info.package_name, info.filename)
+    generator_write(info.path, write_content)
+  end)
+end
+
+---Generate a new test record?
+M.generate_test_record = function()
+  generator_base(true, function(info)
+    local write_content =
+      string.format(utils.record_boiler_plate, info.package_name, info.filename)
+    generator_write(info.path, write_content)
+  end)
+end
+
+---Generate a new test interface?
+M.generate_test_interface = function()
+  generator_base(true, function(info)
+    local write_content = string.format(
+      utils.interface_boiler_plate,
+      info.package_name,
+      info.filename
+    )
+    generator_write(info.path, write_content)
+  end)
+end
+
+---Generate a new test enum?
+M.generate_test_enum = function()
+  generator_base(true, function(info)
+    local write_content =
+      string.format(utils.enum_boiler_plate, info.package_name, info.filename)
+    generator_write(info.path, write_content)
+  end)
+end
 return M
