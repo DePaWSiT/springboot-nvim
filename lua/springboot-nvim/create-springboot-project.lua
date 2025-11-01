@@ -136,13 +136,18 @@ local naming_input = function()
 end
 
 ---Callback method to be called after choosing dependencies
----@param dependencies string[]|nil Array containing the dependencies chosen
+---@param dependencies PickerItem[]|nil Array containing the dependencies chosen
 local choose_dependencies_callback = function(dependencies)
   if dependencies == nil then
     abort_input("dependencies")
     return
   end
-  local dependency_string = table.concat(dependencies, ",")
+  local dependency_string = table.concat(
+    vim.tbl_map(function(x)
+      return x.id
+    end, dependencies),
+    ","
+  )
   project_info.dependencies = dependency_string
   naming_input()
 end

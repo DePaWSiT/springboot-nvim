@@ -100,7 +100,6 @@ local function generator_base(is_testing, callback)
     return
   end
 
-  --TODO: what to do when this returns an empty table? use project root? idk
   local subdirs = utils.get_relative_subdirectories(language_path)
   local manual_override_string = "Manual Override"
   table.insert(subdirs, manual_override_string)

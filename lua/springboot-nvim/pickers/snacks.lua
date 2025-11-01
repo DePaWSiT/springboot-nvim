@@ -6,7 +6,7 @@ local M = {}
 
 ---Using snacks picker for dependecy selection
 ---@param springboot_data table
----@param callback fun(selection:string[]) A callback method with the result
+---@param callback fun(callback:PickerItem[])A callback method with the result
 M.choose_spring_dependencies = function(springboot_data, callback)
   local dependencies = {}
   for _, categories in pairs(springboot_data.dependencies.values) do
@@ -23,7 +23,7 @@ M.choose_spring_dependencies = function(springboot_data, callback)
     confirm = function(ret_picker)
       local selected = ret_picker:selected()
       for _, item in pairs(selected) do
-        table.insert(selection, item.value)
+        table.insert(selection, { name = item.text, value = item.value })
       end
       ret_picker:close()
       callback(selection)

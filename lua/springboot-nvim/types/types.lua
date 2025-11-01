@@ -58,9 +58,17 @@
 ---@class Init
 ---@field setup fun(opts:ConfigOptions)
 ---
+---@class PickerItem
+---@field name string
+---@field value string
+---
 ---@class PickerBasic
----@field choose_spring_dependencies fun(spring_request_data: table, opts:table, done_flag:string|nil, callback:fun(selection:string[]|nil))
+---@field choose_spring_dependencies fun(spring_request_data: table, opts:table, done_flag:{value:string, name:string}|nil, callback:fun(selection:PickerItem[]|nil))
 ---
 ---@class SnacksPicker
----@field choose_spring_dependencies fun(spring_request_data: table, callback: fun(selection:string[]|nil))
+---@field choose_spring_dependencies fun(spring_request_data: table, callback: fun(selection:PickerItem[]|nil))
 ---
+---@class RunProject
+---@field start fun()
+---@field restart fun()
+---@field stop fun()

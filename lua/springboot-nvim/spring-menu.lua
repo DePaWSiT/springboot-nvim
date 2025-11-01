@@ -139,24 +139,27 @@ M.open_spring_menu = function()
       end,
     },
     {
-      --TODO: requires implementation
       name = "Start",
       func = function()
-        print("Opening file...")
+        ---@type RunProject
+        local run = require("springboot-nvim.run-project")
+        run.start()
       end,
     },
     {
-      --TODO: requires implementation
       name = "Restart",
       func = function()
-        print("Opening file...")
+        ---@type RunProject
+        local run = require("springboot-nvim.run-project")
+        run.restart()
       end,
     },
     {
-      --TODO: requires implementation
       name = "Stop",
       func = function()
-        print("Saving file...")
+        ---@type RunProject
+        local run = require("springboot-nvim.run-project")
+        run.stop()
       end,
     },
   }
